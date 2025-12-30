@@ -11,6 +11,7 @@ import stat
 import pathlib
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
+from jinja2 import Template
 
 from multilspy.multilspy_logger import MultilspyLogger
 from multilspy.language_server import LanguageServer
@@ -134,36 +135,28 @@ class KotlinLanguageServer(LanguageServer):
         """
         Returns the initialize params for the Kotlin Language Server.
         """
-        with open(str(pathlib.PurePath(os.path.dirname(__file__), "initialize_params.json")), "r") as f:
-            d: InitializeParams = json.load(f)
-
-        del d["_description"]
+        with open(str(pathlib.PurePath(os.path.dirname(__file__), "initialize_params.json.j2")), "r") as f:
+            template_str = f.read()
 
         if not os.path.isabs(repository_absolute_path):
             repository_absolute_path = os.path.abspath(repository_absolute_path)
 
-        assert d["processId"] == "os.getpid()"
-        d["processId"] = os.getpid()
-
-        assert d["rootPath"] == "repository_absolute_path"
-        d["rootPath"] = repository_absolute_path
-
-        assert d["rootUri"] == "pathlib.Path(repository_absolute_path).as_uri()"
-        d["rootUri"] = pathlib.Path(repository_absolute_path).as_uri()
-
-        assert d["initializationOptions"]["workspaceFolders"] == "[pathlib.Path(repository_absolute_path).as_uri()]"
-        d["initializationOptions"]["workspaceFolders"] = [pathlib.Path(repository_absolute_path).as_uri()]
-
-        assert (
-                d["workspaceFolders"]
-                == '[\n            {\n                "uri": pathlib.Path(repository_absolute_path).as_uri(),\n                "name": os.path.basename(repository_absolute_path),\n            }\n        ]'
+        template = Template(template_str)
+        rendered_str = template.render(
+            processId=os.getpid(),
+            rootPath=repository_absolute_path,
+            rootUri=pathlib.Path(repository_absolute_path).as_uri(),
+            initializationOptionsWorkspaceFolders=[pathlib.Path(repository_absolute_path).as_uri()],
+            workspaceFolders=[
+                {
+                    "uri": pathlib.Path(repository_absolute_path).as_uri(),
+                    "name": os.path.basename(repository_absolute_path),
+                }
+            ]
         )
-        d["workspaceFolders"] = [
-            {
-                "uri": pathlib.Path(repository_absolute_path).as_uri(),
-                "name": os.path.basename(repository_absolute_path),
-            }
-        ]
+        d: InitializeParams = json.loads(rendered_str)
+
+        del d["_description"]
 
         return d
 

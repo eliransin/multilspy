@@ -8,6 +8,7 @@ import os
 import pathlib
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
+from jinja2 import Template
 
 from multilspy.multilspy_logger import MultilspyLogger
 from multilspy.language_server import LanguageServer
@@ -37,23 +38,20 @@ class JediServer(LanguageServer):
         """
         Returns the initialize params for the Jedi Language Server.
         """
-        with open(os.path.join(os.path.dirname(__file__), "initialize_params.json"), "r") as f:
-            d = json.load(f)
+        with open(os.path.join(os.path.dirname(__file__), "initialize_params.json.j2"), "r") as f:
+            template_str = f.read()
+
+        template = Template(template_str)
+        rendered_str = template.render(
+            processId=os.getpid(),
+            rootPath=repository_absolute_path,
+            rootUri=pathlib.Path(repository_absolute_path).as_uri(),
+            uri=pathlib.Path(repository_absolute_path).as_uri(),
+            name=os.path.basename(repository_absolute_path)
+        )
+        d = json.loads(rendered_str)
 
         del d["_description"]
-
-        d["processId"] = os.getpid()
-        assert d["rootPath"] == "$rootPath"
-        d["rootPath"] = repository_absolute_path
-
-        assert d["rootUri"] == "$rootUri"
-        d["rootUri"] = pathlib.Path(repository_absolute_path).as_uri()
-
-        assert d["workspaceFolders"][0]["uri"] == "$uri"
-        d["workspaceFolders"][0]["uri"] = pathlib.Path(repository_absolute_path).as_uri()
-
-        assert d["workspaceFolders"][0]["name"] == "$name"
-        d["workspaceFolders"][0]["name"] = os.path.basename(repository_absolute_path)
 
         return d
 

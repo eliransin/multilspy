@@ -1,13 +1,13 @@
 {
     "_description": "The parameters sent by the client when initializing the language server with the \"initialize\" request. More details at https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#initialize",
-    "processId": "os.getpid()",
+    "processId": {{ processId }},
     "clientInfo": {
-        "name": "Multilspy Kotlin Client",
-        "version": "1.0.0"
+        "name": "Visual Studio Code - Insiders",
+        "version": "1.82.0-insider"
     },
     "locale": "en",
-    "rootPath": "repository_absolute_path",
-    "rootUri": "pathlib.Path(repository_absolute_path).as_uri()",
+    "rootPath": "{{ rootPath }}",
+    "rootUri": "{{ rootUri }}",
     "capabilities": {
         "workspace": {
             "applyEdit": true,
@@ -24,9 +24,7 @@
                     "groupsOnLabel": true
                 }
             },
-            "didChangeConfiguration": {
-                "dynamicRegistration": true
-            },
+            "configuration": true,
             "didChangeWatchedFiles": {
                 "dynamicRegistration": true,
                 "relativePatternSupport": true
@@ -80,7 +78,9 @@
             "executeCommand": {
                 "dynamicRegistration": true
             },
-            "configuration": true,
+            "didChangeConfiguration": {
+                "dynamicRegistration": true
+            },
             "workspaceFolders": true,
             "semanticTokens": {
                 "refreshSupport": true
@@ -127,7 +127,7 @@
                 "dynamicRegistration": true,
                 "contextSupport": true,
                 "completionItem": {
-                    "snippetSupport": false,
+                    "snippetSupport": true,
                     "commitCharactersSupport": true,
                     "documentationFormat": [
                         "markdown",
@@ -140,7 +140,7 @@
                             1
                         ]
                     },
-                    "insertReplaceSupport": false,
+                    "insertReplaceSupport": true,
                     "resolveSupport": {
                         "properties": [
                             "documentation",
@@ -173,7 +173,6 @@
                         12,
                         13,
                         14,
-                        15,
                         16,
                         17,
                         18,
@@ -401,7 +400,7 @@
                 "multilineTokenSupport": false,
                 "overlappingTokenSupport": false,
                 "serverCancelSupport": true,
-                "augmentsSyntaxTokens": true
+                "augmentsSyntaxTokens": false
             },
             "linkedEditingRange": {
                 "dynamicRegistration": true
@@ -455,7 +454,37 @@
             },
             "markdown": {
                 "parser": "marked",
-                "version": "1.1.0"
+                "version": "1.1.0",
+                "allowedTags": [
+                    "ul",
+                    "li",
+                    "p",
+                    "code",
+                    "blockquote",
+                    "ol",
+                    "h1",
+                    "h2",
+                    "h3",
+                    "h4",
+                    "h5",
+                    "h6",
+                    "hr",
+                    "em",
+                    "pre",
+                    "table",
+                    "thead",
+                    "tbody",
+                    "tr",
+                    "th",
+                    "td",
+                    "div",
+                    "del",
+                    "a",
+                    "strong",
+                    "br",
+                    "img",
+                    "span"
+                ]
             },
             "positionEncodings": [
                 "utf-16"
@@ -466,56 +495,214 @@
                 "dynamicRegistration": true,
                 "executionSummarySupport": true
             }
+        },
+        "experimental": {
+            "snippetTextEdit": true,
+            "codeActionGroup": true,
+            "hoverCustom": true,
+            "serverStatusNotification": true,
+            "colorProvider": true,
+            "commands": {
+                "commands": [
+                    "rust-analyzer.runSingle",
+                    "rust-analyzer.debugSingle",
+                    "rust-analyzer.showReferences",
+                    "rust-analyzer.gotoLocation",
+                    "rust-analyzer.applySourceChange"
+                ]
+            }
         }
     },
     "initializationOptions": {
-        "workspaceFolders": "[pathlib.Path(repository_absolute_path).as_uri()]",
-        "storagePath": null,
-        "codegen": {
-            "enabled": false
+        "cargo": {
+            "buildScripts": {
+                "enable": true
+            },
+            "features": "all"
         },
-        "compiler": {
-            "jvm": {
-                "target": "default"
-            }
+        "checkOnSave": {
+            "command": "clippy"
         },
         "completion": {
-            "snippets": {
-                "enabled": true
+            "callable": {
+                "snippets": "fill_arguments"
+            },
+            "postfix": {
+                "enable": true
             }
         },
         "diagnostics": {
-            "enabled": true,
-            "level": 4,
-            "debounceTime": 250
+            "disabled": [
+                "unresolved-proc-macro"
+            ],
+            "enable": true,
+            "experimental": {
+                "enable": true
+            }
         },
-        "scripts": {
-            "enabled": true,
-            "buildScriptsEnabled": true
-        },
-        "indexing": {
-            "enabled": true
-        },
-        "externalSources": {
-            "useKlsScheme": false,
-            "autoConvertToKotlin": false
+        "hover": {
+            "actions": {
+                "debug": {
+                    "enable": true
+                },
+                "enable": true,
+                "gotoTypeDef": {
+                    "enable": true
+                },
+                "implementations": {
+                    "enable": true
+                },
+                "references": {
+                    "enable": true
+                },
+                "run": {
+                    "enable": true
+                }
+            }
         },
         "inlayHints": {
-            "typeHints": false,
-            "parameterHints": false,
-            "chainedHints": false
+            "bindingModeHints": {
+                "enable": false
+            },
+            "chainingHints": {
+                "enable": true
+            },
+            "closingBraceHints": {
+                "enable": true,
+                "minLines": 25
+            },
+            "closureReturnTypeHints": {
+                "enable": "never"
+            },
+            "lifetimeElisionHints": {
+                "enable": "never",
+                "useParameterNames": false
+            },
+            "maxLength": 25,
+            "parameterHints": {
+                "enable": true
+            },
+            "reborrowHints": {
+                "enable": "never"
+            },
+            "renderColons": true,
+            "typeHints": {
+                "enable": true,
+                "hideClosureInitialization": false,
+                "hideNamedConstructor": false
+            }
         },
-        "formatting": {
-            "formatter": "ktfmt",
-            "ktfmt": {
-                "style": "google",
-                "indent": 4,
-                "maxWidth": 100,
-                "continuationIndent": 8,
-                "removeUnusedImports": true
+        "lens": {
+            "debug": {
+                "enable": true
+            },
+            "enable": true,
+            "forceCustomCommands": true,
+            "implementations": {
+                "enable": true
+            },
+            "location": "above_name",
+            "references": {
+                "adt": {
+                    "enable": false
+                },
+                "enumVariant": {
+                    "enable": false
+                },
+                "method": {
+                    "enable": false
+                },
+                "trait": {
+                    "enable": false
+                }
+            },
+            "run": {
+                "enable": true
+            }
+        },
+        "linkedProjects": [],
+        "lru": {
+            "capacity": null,
+            "query": {
+                "capacities": {}
+            }
+        },
+        "notifications": {
+            "cargoTomlNotFound": true
+        },
+        "numThreads": null,
+        "procMacro": {
+            "attributes": {
+                "enable": true
+            },
+            "enable": true,
+            "ignored": {},
+            "server": null
+        },
+        "references": {
+            "excludeImports": false
+        },
+        "rustc": {
+            "source": null
+        },
+        "rustfmt": {
+            "extraArgs": [],
+            "overrideCommand": null,
+            "rangeFormatting": {
+                "enable": false
+            }
+        },
+        "semanticHighlighting": {
+            "doc": {
+                "comment": {
+                    "inject": {
+                        "enable": true
+                    }
+                }
+            },
+            "nonStandardTokens": true,
+            "operator": {
+                "enable": true,
+                "specialization": {
+                    "enable": false
+                }
+            },
+            "punctuation": {
+                "enable": false,
+                "separate": {
+                    "macro": {
+                        "bang": false
+                    }
+                },
+                "specialization": {
+                    "enable": false
+                }
+            },
+            "strings": {
+                "enable": true
+            }
+        },
+        "signatureInfo": {
+            "detail": "full",
+            "documentation": {
+                "enable": true
+            }
+        },
+        "workspace": {
+            "symbol": {
+                "search": {
+                    "kind": "only_types",
+                    "limit": 128,
+                    "scope": "workspace"
+                }
             }
         }
     },
     "trace": "verbose",
-    "workspaceFolders": "[\n            {\n                \"uri\": pathlib.Path(repository_absolute_path).as_uri(),\n                \"name\": os.path.basename(repository_absolute_path),\n            }\n        ]"
+    "workspaceFolders": [
+        {
+            "uri": "{{ uri }}",
+            "name": "{{ name }}"
+        }
+    ]
 }

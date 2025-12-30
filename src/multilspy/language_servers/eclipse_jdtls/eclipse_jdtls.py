@@ -13,6 +13,7 @@ import stat
 import uuid
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
+from jinja2 import Template
 
 from multilspy.multilspy_logger import MultilspyLogger
 from multilspy.language_server import LanguageServer
@@ -244,47 +245,32 @@ class EclipseJDTLS(LanguageServer):
         Returns the initialize parameters for the EclipseJDTLS server.
         """
         # Look into https://github.com/eclipse/eclipse.jdt.ls/blob/master/org.eclipse.jdt.ls.core/src/org/eclipse/jdt/ls/core/internal/preferences/Preferences.java to understand all the options available
-        with open(str(PurePath(os.path.dirname(__file__), "initialize_params.json")), "r") as f:
-            d: InitializeParams = json.load(f)
-
-        del d["_description"]
+        with open(str(pathlib.PurePath(os.path.dirname(__file__), "initialize_params.json.j2")), "r") as f:
+            template_str = f.read()
 
         if not os.path.isabs(repository_absolute_path):
             repository_absolute_path = os.path.abspath(repository_absolute_path)
 
-        assert d["processId"] == "os.getpid()"
-        d["processId"] = os.getpid()
-
-        assert d["rootPath"] == "repository_absolute_path"
-        d["rootPath"] = repository_absolute_path
-
-        assert d["rootUri"] == "pathlib.Path(repository_absolute_path).as_uri()"
-        d["rootUri"] = pathlib.Path(repository_absolute_path).as_uri()
-
-        assert d["initializationOptions"]["workspaceFolders"] == "[pathlib.Path(repository_absolute_path).as_uri()]"
-        d["initializationOptions"]["workspaceFolders"] = [pathlib.Path(repository_absolute_path).as_uri()]
-
-        assert (
-            d["workspaceFolders"]
-            == '[\n            {\n                "uri": pathlib.Path(repository_absolute_path).as_uri(),\n                "name": os.path.basename(repository_absolute_path),\n            }\n        ]'
+        template = Template(template_str)
+        rendered_str = template.render(
+            processId=os.getpid(),
+            rootPath=repository_absolute_path,
+            rootUri=pathlib.Path(repository_absolute_path).as_uri(),
+            bundles=[self.runtime_dependency_paths.intellicode_jar_path],
+            initializationOptionsWorkspaceFolders=[pathlib.Path(repository_absolute_path).as_uri()],
+            jre_home_path=self.runtime_dependency_paths.jre_home_path,
+            gradle_path=self.runtime_dependency_paths.gradle_path,
+            jre_path=self.runtime_dependency_paths.jre_path,
+            workspaceFolders=[
+                {
+                    "uri": pathlib.Path(repository_absolute_path).as_uri(),
+                    "name": os.path.basename(repository_absolute_path),
+                }
+            ]
         )
-        d["workspaceFolders"] = [
-            {
-                "uri": pathlib.Path(repository_absolute_path).as_uri(),
-                "name": os.path.basename(repository_absolute_path),
-            }
-        ]
+        d: InitializeParams = json.loads(rendered_str)
 
-        assert d["initializationOptions"]["bundles"] == ["intellicode-core.jar"]
-        bundles = [self.runtime_dependency_paths.intellicode_jar_path]
-        d["initializationOptions"]["bundles"] = bundles
-
-        assert d["initializationOptions"]["settings"]["java"]["configuration"]["runtimes"] == [
-            {"name": "JavaSE-17", "path": "static/vscode-java/extension/jre/17.0.8.1-linux-x86_64", "default": True}
-        ]
-        d["initializationOptions"]["settings"]["java"]["configuration"]["runtimes"] = [
-            {"name": "JavaSE-17", "path": self.runtime_dependency_paths.jre_home_path, "default": True}
-        ]
+        del d["_description"]
 
         for runtime in d["initializationOptions"]["settings"]["java"]["configuration"]["runtimes"]:
             assert "name" in runtime
@@ -292,15 +278,6 @@ class EclipseJDTLS(LanguageServer):
             assert os.path.exists(
                 runtime["path"]
             ), f"Runtime required for eclipse_jdtls at path {runtime['path']} does not exist"
-
-        assert d["initializationOptions"]["settings"]["java"]["import"]["gradle"]["home"] == "abs(static/gradle-7.3.3)"
-        d["initializationOptions"]["settings"]["java"]["import"]["gradle"][
-            "home"
-        ] = self.runtime_dependency_paths.gradle_path
-
-        d["initializationOptions"]["settings"]["java"]["import"]["gradle"]["java"][
-            "home"
-        ] = self.runtime_dependency_paths.jre_path
 
         return d
 
